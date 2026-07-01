@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>校园数据导航 · Campus Agent</title>
+<style>
+/* ═══════ Foundation ═══════ */
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#f7f8fa; --surface:#fff; --surface2:#f1f4f6;
+  --border:#e4e8ec; --border-lt:#eef1f4;
+  --b50:#eff6ff; --b100:#dbeafe; --b200:#bfdbfe; --b400:#60a5fa; --b500:#3b82f6; --b600:#2563eb; --b700:#1d4ed8;
+  --g50:#ecfdf5; --g500:#10b981; --g600:#059669;
+  --a50:#fffbeb; --a500:#f59e0b; --a600:#d97706;
+  --r50:#fef2f2; --r500:#ef4444;
+  --p50:#f5f3ff; --p500:#8b5cf6;
+  --t1:#0f172a; --t2:#475569; --t3:#94a3b8;
+  --glass:rgba(255,255,255,.72); --glass-b:rgba(255,255,255,.5);
+  --shadow:0 8px 32px rgba(0,0,0,.04); --shadow-lg:0 20px 60px rgba(0,0,0,.06);
+  --xs:4px; --sm:8px; --md:16px; --lg:24px; --xl:32px; --xxl:48px;
+  --r-sm:8px; --r-md:12px; --r-lg:16px; --r-xl:24px;
+  --spring:cubic-bezier(.16,1,.3,1);
+  --font:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei","Helvetica Neue",sans-serif;
+  --mono:"SF Mono","Fira Code","Cascadia Code",monospace;
+}
+html{font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased}
+body{font-family:var(--font);background:var(--bg);color:var(--t1);min-height:100vh;overflow-x:hidden}
+::selection{background:var(--b100);color:var(--b700)}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:10px}
+
+/* Ambient */
+.ambient{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+.ambient div{position:absolute;border-radius:50%;filter:blur(80px);opacity:.3}
+.ambient .a1{width:500px;height:500px;background:var(--b200);top:-150px;right:-100px;animation:driftA 20s ease-in-out infinite}
+.ambient .a2{width:400px;height:400px;background:var(--p50);bottom:-100px;left:-100px;animation:driftB 24s ease-in-out infinite}
+.ambient .a3{width:300px;height:300px;background:var(--b100);top:50%;left:50%;animation:driftC 28s ease-in-out infinite}
+@keyframes driftA{0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(60px,-30px) scale(1.1)}66%{transform:translate(-20px,40px) scale(.9)}}
+@keyframes driftB{0%,100%{transform:translate(0,0)}50%{transform:translate(-40px,60px)}}
+@keyframes driftC{0%,100%{transform:translate(-50%,-50%) scale(1)}50%{transform:translate(-50%,-50%) scale(1.3)}}
+
+/* Typography */
+h1{font-size:2rem;font-weight:700;letter-spacing:-.02em;line-height:1.2}
+h2{font-size:1.35rem;font-weight:600;letter-spacing:-.01em}
+h3{font-size:1.1rem;font-weight:600}
+.fs-sm{font-size:.8rem}.fs-lg{font-size:1.7rem;font-weight:700;letter-spacing:-.02em}
+.muted{color:var(--t3)}.t2{color:var(--t2)}
+
+/* Loading fallback (shown before Vue mounts) */
+#loading-screen{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:var(--bg);font-family:var(--font);transition:opacity .4s var(--spring)}
+#loading-screen .ls-inner{text-align:center}
+#loading-screen .ls-spinner{width:36px;height:36px;border:3px solid var(--border);border-top-color:var(--b500);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 16px}
+#loading-screen .ls-text{font-size:.9rem;color:var(--t3)}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Layout */
+.app{position:relative;z-index:1;max-width:1200px;margin:0 auto;padding:0 var(--md)}
+
+/* Nav */
+.nav{display:flex;align-items:center;justify-content:space-between;padding:var(--md) 0;margin-bottom:var(--lg);border-bottom:1px solid var(--border)}
+.nav-logo{display:flex;align-items:center;gap:var(--sm);font-weight:700;font-size:1.15rem;color:#2563eb;cursor:pointer;user-select:none}
+.nav-logo .logo-icon{width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,#2563eb,#8b5cf6);display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;font-weight:700}
+.nav-tabs{display:flex;gap:4px;background:var(--surface2);padding:3px;border-radius:var(--r-sm)}
+.nav-tab{padding:6px 16px;border-radius:6px;font-size:.85rem;font-weight:500;cursor:pointer;transition:all .2s;color:var(--t2);border:none;background:none;font-family:var(--font)}
+.nav-tab:hover{color:var(--t1);background:rgba(0,0,0,.03)}
+.nav-tab.active{background:var(--surface);color:#2563eb;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.nav-right{display:flex;align-items:center;gap:var(--sm)}
+.nav-user{display:flex;align-items:center;gap:var(--sm);padding:6px 12px;border-radius:9999px;background:var(--b50);color:#2563eb;font-size:.8rem;font-weight:500}
+
+/* Buttons */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 18px;border-radius:var(--r-sm);font-size:.85rem;font-weight:500;cursor:pointer;transition:all .2s;border:none;font-family:var(--font)}
+.btn-ghost{background:transparent;color:var(--t2)}.btn-ghost:hover{background:var(--surface2);color:var(--t1)}
+.btn-sm{padding:4px 10px;font-size:.75rem}
+
+/* Cards */
+.card{background:var(--surface);border-radius:var(--r-lg);border:1px solid var(--border);padding:var(--lg);transition:all .25s var(--spring);overflow:hidden}
+.card:hover{border-color:var(--b200);box-shadow:var(--shadow)}
+.card-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--md)}
+.card-hdr h3{font-size:.95rem}
+.glass-card{background:var(--glass);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid var(--glass-b);box-shadow:var(--shadow-lg)}
+
+/* Bento grid */
+.bento{display:grid;grid-template-columns:1fr 1fr 1fr;gap:var(--md);margin-bottom:var(--lg)}
+.bento .span-2{grid-column:span 2}.bento .span-3{grid-column:span 3}
+
+/* Welcome screen */
+.welcome{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;position:relative;z-index:1}
+.welcome-box{text-align:center;max-width:420px;width:100%;padding:var(--xxl) var(--xl)}
+.welcome-box h1{margin-bottom:var(--sm);font-size:2.2rem}
+.welcome-box .sub{color:var(--t2);margin-bottom:var(--xl);font-size:.95rem;line-height:1.6}
+.input-wrap{position:relative;margin-bottom:var(--md)}
+.input-wrap input{width:100%;padding:14px 16px;border:2px solid var(--border);border-radius:var(--r-md);font-size:1rem;font-family:var(--font);background:var(--surface);transition:all .25s;outline:none;color:var(--t1)}
+.input-wrap input:focus{border-color:var(--b400);box-shadow:0 0 0 3px rgba(59,130,246,.1)}
+.input-wrap input::placeholder{color:var(--t3)}
+.input-wrap label{position:absolute;left:16px;top:50%;transform:translateY(-50%);color:var(--t3);transition:all .2s;pointer-events:none;background:var(--surface);padding:0 4px}
+.input-wrap input:focus~label,.input-wrap input:not(:placeholder-shown)~label{top:0;font-size:.7rem;color:#2563eb;font-weight:500}
+.enter-btn{width:100%;padding:14px;border-radius:var(--r-md);font-size:1rem;font-weight:600;border:none;background:linear-gradient(135deg,#2563eb,#3b82f6);color:#fff;cursor:pointer;transition:all .25s var(--spring);box-shadow:0 4px 16px rgba(37,99,235,.2)}
+.enter-btn:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(37,99,235,.3)}
+.enter-btn:active{transform:translateY(0)}
+.enter-btn:disabled{opacity:.6;cursor:not-allowed;transform:none}
+.welcome-hint{text-align:center;margin-top:var(--md);font-size:.8rem;color:var(--t3)}
+.welcome-hint code{background:var(--b50);padding:2px 6px;border-radius:3px;color:#2563eb;font-size:.8rem}
+
+/* Stats */
+.stat-row{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--md);margin-bottom:var(--lg)}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:var(--lg);transition:all .25s var(--spring)}
+.stat-card:hover{border-color:var(--b200);box-shadow:var(--shadow)}
+.stat-card .stat-icon{width:36px;height:36px;border-radius:var(--r-sm);display:flex;align-items:center;justify-content:center;margin-bottom:var(--sm);font-size:1.1rem}
+.stat-card .stat-val{font-size:1.7rem;font-weight:700;letter-spacing:-.02em;margin-bottom:2px}
+.stat-card .stat-label{font-size:.78rem;color:var(--t3)}.stat-card .stat-sub{font-size:.72rem;color:var(--t3);margin-top:2px}
+.icon-b{background:var(--b50);color:#2563eb}.icon-g{background:var(--g50);color:var(--g600)}.icon-a{background:var(--a50);color:var(--a600)}.icon-p{background:var(--p50);color:var(--p500)}
+
+/* Course timeline */
+.course-item{display:flex;gap:var(--md);padding:12px 0;border-bottom:1px solid var(--border-lt);transition:all .2s}
+.course-item:last-child{border:none}
+.course-item:hover{background:var(--b50);margin:0 -12px;padding:12px;border-radius:var(--r-sm)}
+.course-time{min-width:80px;font-size:.78rem;color:var(--t2);font-family:var(--mono);padding-top:2px}
+.course-info{flex:1;min-width:0}
+.course-info .cname{font-weight:600;font-size:.9rem;margin-bottom:2px}
+.course-info .cmeta{font-size:.78rem;color:var(--t3);display:flex;gap:var(--md)}
+.course-dot{width:3px;min-width:3px;min-height:24px;border-radius:2px;background:#60a5fa;margin-top:4px;flex-shrink:0}
+
+/* Library bars */
+.lib-zone{display:flex;align-items:center;gap:var(--md);padding:8px 0}
+.lib-zone .lz-name{font-size:.82rem;font-weight:500;min-width:70px;color:var(--t2)}
+.lib-zone .lz-bar-wrap{flex:1;height:8px;background:var(--surface2);border-radius:4px;overflow:hidden}
+.lib-zone .lz-bar{height:100%;border-radius:4px;transition:width .6s var(--spring)}
+.lib-zone .lz-perc{font-size:.78rem;font-family:var(--mono);color:var(--t3);min-width:40px;text-align:right}
+
+/* Notices */
+.notice-item{padding:10px 0;border-bottom:1px solid var(--border-lt);cursor:pointer;transition:all .15s}
+.notice-item:last-child{border:none}
+.notice-item:hover{color:#2563eb}
+.notice-item .ntag{display:inline-block;padding:1px 6px;border-radius:3px;font-size:.65rem;font-weight:600;margin-right:var(--sm);vertical-align:middle}
+.notice-item .ntitle{font-size:.82rem}
+.notice-item .ndate{font-size:.7rem;color:var(--t3);margin-top:2px}
+.ntag-notice{background:var(--b50);color:#2563eb}.ntag-competition{background:var(--a50);color:var(--a600)}.ntag-urgent{background:var(--r50);color:var(--r500)}
+
+/* Chat */
+.chat-layout{display:grid;grid-template-columns:1fr 360px;gap:var(--md);height:calc(100vh - 130px);min-height:600px}
+.chat-main{display:flex;flex-direction:column;background:var(--surface);border-radius:var(--r-lg);border:1px solid var(--border);overflow:hidden}
+.chat-messages{flex:1;overflow-y:auto;padding:var(--lg)}
+.chat-msg{margin-bottom:var(--lg);animation:msgIn .3s var(--spring)}
+.chat-msg.user{text-align:right}
+.chat-msg .bubble{display:inline-block;max-width:80%;padding:10px 14px;border-radius:var(--r-md);font-size:.88rem;line-height:1.55;text-align:left}
+.chat-msg.user .bubble{background:#2563eb;color:#fff;border-bottom-right-radius:4px}
+.chat-msg.assistant .bubble{background:var(--surface2);color:var(--t1);border-bottom-left-radius:4px}
+.chat-msg .meta{font-size:.68rem;color:var(--t3);margin-top:4px;padding:0 4px}
+.chat-input-box{display:flex;gap:var(--sm);padding:var(--md);border-top:1px solid var(--border);background:var(--surface2)}
+.chat-input-box input{flex:1;padding:10px 14px;border:1px solid var(--border);border-radius:var(--r-sm);font-family:var(--font);font-size:.88rem;outline:none;transition:border-color .2s}
+.chat-input-box input:focus{border-color:var(--b400);box-shadow:0 0 0 2px rgba(59,130,246,.08)}
+.chat-input-box button{padding:10px 20px;border-radius:var(--r-sm);font-size:.85rem;font-weight:500;border:none;background:#2563eb;color:#fff;cursor:pointer;transition:all .2s}
+.chat-input-box button:hover{background:#1d4ed8}
+.chat-input-box button:disabled{opacity:.5;cursor:not-allowed}
+.chat-sidebar{background:var(--surface);border-radius:var(--r-lg);border:1px solid var(--border);padding:var(--lg);overflow-y:auto}
+.chat-sidebar h3{margin-bottom:var(--md);font-size:.9rem;color:var(--t2)}
+.quick-q{display:block;width:100%;text-align:left;padding:8px 12px;border:1px solid var(--border-lt);border-radius:var(--r-sm);background:var(--surface);font-size:.8rem;color:var(--t2);cursor:pointer;margin-bottom:var(--sm);transition:all .15s;font-family:var(--font)}
+.quick-q:hover{background:var(--b50);border-color:var(--b200);color:#2563eb}
+@keyframes msgIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* Week tabs */
+.week-tabs{display:flex;gap:2px;margin-bottom:var(--md);flex-wrap:wrap}
+.wtab{padding:8px 16px;border-radius:var(--r-sm);font-size:.8rem;font-weight:500;cursor:pointer;transition:all .15s;border:none;background:transparent;color:var(--t2);font-family:var(--font)}
+.wtab:hover{background:var(--surface2);color:var(--t1)}
+.wtab.active{background:var(--b50);color:#2563eb}
+
+/* Chart */
+.chart-wrap{height:220px;margin-top:var(--sm)}
+
+/* Empty */
+.empty{text-align:center;padding:var(--xxl) var(--lg);color:var(--t3);font-size:.85rem}
+
+/* Loader */
+.loader-inline{display:inline-block;width:20px;height:20px;border:2px solid var(--border);border-top-color:var(--b500);border-radius:50%;animation:spin .6s linear infinite}
+
+/* Toast */
+.toast{position:fixed;top:20px;right:20px;z-index:999;padding:12px 20px;border-radius:var(--r-sm);font-size:.85rem;font-weight:500;box-shadow:var(--shadow-lg);animation:slideIn .3s var(--spring)}
+.toast-err{background:#fef2f2;border:1px solid #fecaca;color:#991b1b}.toast-ok{background:#f0fdf4;border:1px solid #bbf7d0;color:#166534}
+@keyframes slideIn{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
+
+/* Tab panel */
+.tab-panel{animation:fadeIn .3s}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+
+/* Responsive */
+@media(max-width:768px){.bento{grid-template-columns:1fr}.bento .span-2,.bento .span-3{grid-column:1}.stat-row{grid-template-columns:1fr}.chat-layout{grid-template-columns:1fr;height:auto}.chat-sidebar{display:none}.nav-tabs{overflow-x:auto;white-space:nowrap;-webkit-overflow-scrolling:touch}}
+</style>
+</head>
+<body>
+
+<!-- Loading screen (vanilla JS, always visible before Vue) -->
+<div id="loading-screen">
+  <div class="ls-inner">
+    <div class="ls-spinner"></div>
+    <div class="ls-text">加载中...</div>
+  </div>
+</div>
+
+<div id="app" style="display:none">
+  <div class="ambient"><div class="a1"></div><div class="a2"></div><div class="a3"></div></div>
+
+  <!-- Welcome -->
+  <div v-if="!loggedIn" class="welcome">
+    <div class="welcome-box glass-card">
+      <h1 style="background:linear-gradient(135deg,#2563eb,#8b5cf6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">Campus Agent</h1>
+      <p class="sub">校园数据融合服务智能体<br>课表 · 消费 · 图书馆 · 知识库 — 一站式导航</p>
+      <div class="input-wrap">
+        <input id="sidInput" v-model="studentId" placeholder=" " @keyup.enter="login">
+        <label for="sidInput">输入学号</label>
+      </div>
+      <button class="enter-btn" @click="login" :disabled="loading">
+        <span v-if="loading" class="loader-inline" style="border-top-color:#fff"></span>
+        <span v-else>进入系统 →</span>
+      </button>
+      <p class="welcome-hint">演示账号：<code>DEMO_USER</code></p>
+    </div>
+  </div>
+
+  <!-- Main App -->
+  <div v-else class="app">
+    <nav class="nav">
+      <div class="nav-logo" @click="tab='overview'">
+        <span class="logo-icon">C</span> Campus Agent
+      </div>
+      <div class="nav-tabs">
+        <button class="nav-tab" :class="{active:tab==='overview'}" @click="tab='overview'">总览</button>
+        <button class="nav-tab" :class="{active:tab==='courses'}" @click="tab='courses'">课表</button>
+        <button class="nav-tab" :class="{active:tab==='consumption'}" @click="tab='consumption'">消费</button>
+        <button class="nav-tab" :class="{active:tab==='library'}" @click="tab='library'">图书馆</button>
+        <button class="nav-tab" :class="{active:tab==='chat'}" @click="tab='chat'">AI 助手</button>
+      </div>
+      <div class="nav-right">
+        <span class="nav-user">{{ studentId }}</span>
+        <button class="btn btn-ghost btn-sm" @click="logout">退出</button>
+      </div>
+    </nav>
+
+    <!-- Toast -->
+    <div v-if="toast.show" class="toast" :class="toast.type==='err'?'toast-err':'toast-ok'">{{ toast.msg }}</div>
+
+    <!-- ═══ Tab: Overview ═══ -->
+    <div v-if="tab==='overview'" class="tab-panel">
+      <div class="stat-row">
+        <div class="stat-card">
+          <div class="stat-icon icon-b">📚</div>
+          <div class="stat-val">{{ dash.courses_today_count }}</div>
+          <div class="stat-label">今日课程</div>
+          <div class="stat-sub">本周共 {{ dash.courses_week_count }} 节</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon icon-g">💳</div>
+          <div class="stat-val">¥{{ dash.consumption.month_total }}</div>
+          <div class="stat-label">本月消费</div>
+          <div class="stat-sub">日均 ¥{{ dash.consumption.daily_avg }}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon icon-a">🪑</div>
+          <div class="stat-val">{{ dash.library.available }}</div>
+          <div class="stat-label">图书馆空位</div>
+          <div class="stat-sub">使用率 {{ dash.library.rate }}%</div>
+        </div>
+      </div>
+
+      <div class="bento">
+        <div class="card span-2">
+          <div class="card-hdr"><h3>📅 今日课表</h3><span class="fs-sm muted">{{ dash.date }} · {{ todayLabel }}</span></div>
+          <div v-if="dash.courses_today.length">
+            <div class="course-item" v-for="c in dash.courses_today" :key="c.course_name+c.period_start">
+              <div class="course-dot">&nbsp;</div>
+              <div class="course-time">{{ periodLabel(c.period_start,c.period_end) }}</div>
+              <div class="course-info">
+                <div class="cname">{{ c.course_name }}</div>
+                <div class="cmeta"><span>👨‍🏫 {{ c.teacher }}</span><span>📍 {{ c.location }}</span></div>
+              </div>
+            </div>
+          </div>
+          <div v-else class="empty"><p>今天没有课程 🎉</p></div>
+        </div>
+
+        <div class="card">
+          <div class="card-hdr"><h3>🏫 图书馆</h3><span class="fs-sm muted">实时</span></div>
+          <div v-if="dash.library.zones && dash.library.zones.length">
+            <div class="lib-zone" v-for="z in dash.library.zones.slice(0,6)" :key="z.area||z.name">
+              <span class="lz-name">{{ z.area || z.name }}</span>
+              <div class="lz-bar-wrap"><div class="lz-bar" :style="{width:z.rate+'%',background:z.rate>70?'#ef4444':z.rate>40?'#f59e0b':'#10b981'}"></div></div>
+              <span class="lz-perc">{{ z.rate }}%</span>
+            </div>
+          </div>
+          <div v-else class="empty"><p>暂无数据</p></div>
+        </div>
+
+        <div class="card span-2">
+          <div class="card-hdr"><h3>📢 通知 & 竞赛</h3></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--md)">
+            <div>
+              <h4 style="font-size:.8rem;color:var(--t3);margin-bottom:var(--sm)">最新通知</h4>
+              <div class="notice-item" v-for="n in dash.notices.slice(0,4)" :key="n.title">
+                <span class="ntag ntag-notice">{{ n.category || '通知' }}</span>
+                <span class="ntitle">{{ n.title }}</span>
+                <div class="ndate">{{ n.date }}</div>
+              </div>
+            </div>
+            <div>
+              <h4 style="font-size:.8rem;color:var(--t3);margin-bottom:var(--sm)">竞赛活动</h4>
+              <div class="notice-item" v-for="c in dash.competitions.slice(0,4)" :key="c.name">
+                <span class="ntag ntag-competition">竞赛</span>
+                <span class="ntitle">{{ c.name }}</span>
+                <div class="ndate">{{ c.organizer || '' }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ Tab: Courses ═══ -->
+    <div v-if="tab==='courses'" class="tab-panel">
+      <div class="week-tabs">
+        <button class="wtab" v-for="(d,i) in dayLabels" :class="{active:cWeekday===i+1}" @click="cWeekday=i+1">{{ d }}</button>
+      </div>
+      <div class="card">
+        <div class="card-hdr"><h3>📅 {{ dayLabels[cWeekday-1] }} 课程</h3><span class="fs-sm muted">{{ weekCourses.length }} 节</span></div>
+        <div v-if="weekCourses.length">
+          <div class="course-item" v-for="c in weekCourses" :key="c.course_name+c.period_start">
+            <div class="course-dot">&nbsp;</div>
+            <div class="course-time">{{ periodLabel(c.period_start,c.period_end) }}</div>
+            <div class="course-info">
+              <div class="cname">{{ c.course_name }}</div>
+              <div class="cmeta"><span>👨‍🏫 {{ c.teacher }}</span><span>📍 {{ c.location }}</span></div>
+            </div>
+          </div>
+        </div>
+        <div v-else class="empty"><p>这一天没有课程</p></div>
+      </div>
+    </div>
+
+    <!-- ═══ Tab: Consumption ═══ -->
+    <div v-if="tab==='consumption'" class="tab-panel">
+      <div class="stat-row">
+        <div class="stat-card">
+          <div class="stat-icon icon-g">💳</div>
+          <div class="stat-val">¥{{ dash.consumption.month_total }}</div>
+          <div class="stat-label">月消费</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon icon-b">📊</div>
+          <div class="stat-val">¥{{ dash.consumption.daily_avg }}</div>
+          <div class="stat-label">日均消费</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon icon-a">🍜</div>
+          <div class="stat-val">{{ dash.consumption.meal_count || 0 }}</div>
+          <div class="stat-label">就餐次数</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-hdr"><h3>近7日消费趋势</h3></div>
+        <div class="chart-wrap" id="consChart"></div>
+      </div>
+    </div>
+
+    <!-- ═══ Tab: Library ═══ -->
+    <div v-if="tab==='library'" class="tab-panel">
+      <div class="stat-row">
+        <div class="stat-card">
+          <div class="stat-icon icon-g">🟢</div>
+          <div class="stat-val">{{ dash.library.available }}</div>
+          <div class="stat-label">可用座位</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon icon-a">🟡</div>
+          <div class="stat-val">{{ dash.library.used }}</div>
+          <div class="stat-label">已用座位</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon icon-b">📊</div>
+          <div class="stat-val">{{ dash.library.rate }}%</div>
+          <div class="stat-label">使用率</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-hdr"><h3>各区域详情</h3></div>
+        <div v-if="dash.library.zones && dash.library.zones.length">
+          <div class="lib-zone" v-for="z in dash.library.zones" :key="z.area||z.name" style="padding:12px 0">
+            <span class="lz-name" style="min-width:100px">{{ z.area || z.name }}</span>
+            <div class="lz-bar-wrap" style="height:12px"><div class="lz-bar" :style="{width:z.rate+'%',background:z.rate>70?'#ef4444':z.rate>40?'#f59e0b':'#10b981'}"></div></div>
+            <span class="lz-perc" style="min-width:70px">{{ z.used || 0 }}/{{ z.total || 0 }} ({{ z.rate }}%)</span>
+          </div>
+        </div>
+        <div v-else class="empty"><p>暂无座位数据</p></div>
+      </div>
+    </div>
+
+    <!-- ═══ Tab: AI Chat ═══ -->
+    <div v-if="tab==='chat'" class="tab-panel">
+      <div class="chat-layout">
+        <div class="chat-main">
+          <div class="chat-messages" ref="chatMsgs">
+            <div v-if="chatHistory.length===0" class="empty" style="padding-top:80px">
+              <p style="font-size:1.5rem;margin-bottom:8px">💬</p>
+              <p>输入问题，AI 助手帮你查询<br>校园数据、课表、通知等信息</p>
+            </div>
+            <div class="chat-msg" v-for="(m,i) in chatHistory" :class="m.role" :key="i">
+              <div class="bubble" v-html="formatMsg(m.content)"></div>
+              <div class="meta">{{ m.role==='user'?'你':'AI助手' }} · {{ m.time }}</div>
+            </div>
+            <div v-if="chatLoading" class="chat-msg assistant"><div class="bubble"><span class="loader-inline"></span></div></div>
+          </div>
+          <div class="chat-input-box">
+            <input v-model="chatInput" placeholder="输入问题… 比如：我今天有什么课？" @keyup.enter="sendChat" :disabled="chatLoading">
+            <button @click="sendChat" :disabled="chatLoading || !chatInput.trim()">发送</button>
+          </div>
+        </div>
+        <div class="chat-sidebar">
+          <h3>快捷问题</h3>
+          <button class="quick-q" @click="quickAsk('我今天有什么课？')">📅 我今天有什么课？</button>
+          <button class="quick-q" @click="quickAsk('图书馆现在还有座位吗？')">🪑 图书馆还有座位吗？</button>
+          <button class="quick-q" @click="quickAsk('我这个月花了多少钱？')">💳 我这个月花了多少钱？</button>
+          <button class="quick-q" @click="quickAsk('最近有什么竞赛可以参加？')">🏆 最近有什么竞赛？</button>
+          <button class="quick-q" @click="quickAsk('学校有什么最新通知？')">📢 最新校园通知</button>
+          <button class="quick-q" @click="quickAsk('帮我推荐一门选修课')">📖 推荐选修课</button>
+          <button class="btn btn-ghost btn-sm" style="margin-top:var(--md);width:100%" @click="clearChat">清除对话</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Load Vue3 + ECharts from local backend static files (no external CDN) -->
+<script src="/static/vue.global.prod.js"></script>
+<script src="/static/echarts.min.js"></script>
+<script>
+
+function initApp(){
+  try {
+    var appEl = document.getElementById('app');
+    var loadingEl = document.getElementById('loading-screen');
+
+    var dayLabels = ['周一','周二','周三','周四','周五','周六','周日'];
+    var periodNames = ['','08:00','08:55','10:00','10:55','14:00','14:55','16:00','16:55','19:00','19:55'];
+    var API = window.location.origin;
+    var todayWd = new Date().getDay() || 7;
+
+    var app = Vue.createApp({
+      data: function(){
+        return {
+          loggedIn: false,
+          studentId: 'DEMO_USER',
+          loading: false,
+          tab: 'overview',
+          toast: {show:false,msg:'',type:'ok'},
+          cWeekday: todayWd > 5 ? 1 : todayWd,
+          dash: {
+            date:'', weekday:0, courses_today:[], courses_week:[], courses_today_count:0, courses_week_count:0,
+            consumption:{month_total:0,daily_avg:0,meal_count:0},
+            library:{total:0,used:0,available:0,rate:0,zones:[]},
+            notices:[], competitions:[]
+          },
+          chatHistory: [],
+          chatInput: '',
+          chatLoading: false,
+          dayLabels: dayLabels,
+          todayWd: todayWd,
+          consTrend: []
+        };
+      },
+      computed: {
+        todayLabel: function(){
+          return '星期' + (this.dayLabels[this.dash.weekday] || '末');
+        },
+        weekCourses: function(){
+          var self = this;
+          if(!self.dash.courses_week) return [];
+          return self.dash.courses_week.filter(function(c){ return c.weekday == self.cWeekday; });
+        }
+      },
+      methods: {
+        showToast: function(msg, type){
+          var self = this;
+          self.toast.msg = msg; self.toast.type = type || 'ok'; self.toast.show = true;
+          clearTimeout(self._toastTimer);
+          self._toastTimer = setTimeout(function(){ self.toast.show = false; }, 3000);
+        },
+        periodLabel: function(s, e){
+          var ps = periodNames[s] || s;
+          var pe = periodNames[e+1] || e;
+          return ps + ' - ' + pe;
+        },
+        login: function(){
+          var self = this;
+          if(!self.studentId.trim()) return;
+          self.loading = true;
+          fetch(API + '/api/dashboard/' + encodeURIComponent(self.studentId.trim()), { mode: 'cors' })
+            .then(function(res){ if(!res.ok) throw new Error('Server error'); return res.json(); })
+            .then(function(data){
+              Object.assign(self.dash, data);
+              self.loggedIn = true;
+              self.cWeekday = data.weekday || 1;
+              self.chatHistory = [];
+              self.$nextTick(function(){ if(self.tab==='consumption') self.renderConsChart(); });
+            })
+            .catch(function(e){
+              self.showToast('连接失败，请确认后端已启动（localhost:8000）', 'err');
+              console.error(e);
+            })
+            .finally(function(){ self.loading = false; });
+        },
+        logout: function(){
+          this.loggedIn = false;
+          this.studentId = 'DEMO_USER';
+          this.tab = 'overview';
+        },
+        sendChat: function(){
+          var self = this;
+          var msg = self.chatInput.trim();
+          if(!msg || self.chatLoading) return;
+          self.chatHistory.push({role:'user',content:msg,time:new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'})});
+          self.chatInput = '';
+          self.chatLoading = true;
+          self.$nextTick(function(){ self.scrollChat(); });
+
+          fetch(API + '/api/chat/stream',{
+            method:'POST', headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({user_id: self.studentId, message: msg})
+          }).then(function(res){
+            var reader = res.body.getReader();
+            var decoder = new TextDecoder();
+            var full = '';
+            self.chatHistory.push({role:'assistant',content:'',time:new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'})});
+            var aiIdx = self.chatHistory.length - 1;
+
+            function read(){
+              reader.read().then(function(r){
+                if(r.done){ self.chatLoading = false; self.refreshDash(); return; }
+                var text = decoder.decode(r.value, {stream:true});
+                text.split('\n').forEach(function(line){
+                  if(line.startsWith('data: ')){
+                    var data = line.slice(6);
+                    if(data === '[DONE]') return;
+                    try { var p = JSON.parse(data); if(p.content) full += p.content; } catch(e){}
+                  }
+                });
+                self.chatHistory[aiIdx].content = full;
+                self.$nextTick(function(){ self.scrollChat(); });
+                read();
+              });
+            }
+            read();
+          }).catch(function(e){
+            self.chatHistory.push({role:'assistant',content:'⚠️ 连接后端失败，请确认服务已启动',time:new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'})});
+            self.showToast('AI服务连接失败','err');
+            self.chatLoading = false;
+          });
+        },
+        quickAsk: function(q){ this.chatInput = q; this.sendChat(); },
+        clearChat: function(){
+          this.chatHistory = [];
+          fetch(API + '/api/session/' + encodeURIComponent(this.studentId), {method:'DELETE'}).catch(function(){});
+        },
+        formatMsg: function(text){
+          return text.replace(/\n/g,'<br>').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>');
+        },
+        refreshDash: function(){
+          var self = this;
+          fetch(API + '/api/dashboard/' + encodeURIComponent(self.studentId))
+            .then(function(res){ if(res.ok) return res.json(); })
+            .then(function(data){ if(data) Object.assign(self.dash, data); })
+            .catch(function(){});
+        },
+        scrollChat: function(){
+          var el = this.$refs.chatMsgs;
+          if(el) el.scrollTop = el.scrollHeight;
+        },
+        renderConsChart: function(){
+          var dom = document.getElementById('consChart');
+          if(!dom || typeof echarts === 'undefined') return;
+          var existing = echarts.getInstanceByDom(dom);
+          if(existing) existing.dispose();
+          var chart = echarts.init(dom);
+          var days = ['周一','周二','周三','周四','周五','周六','周日'];
+          var vals = [12,8,15,10,18,22,14];
+          chart.setOption({
+            tooltip: {trigger:'axis'},
+            grid: {left:0,right:10,top:10,bottom:0,containLabel:true},
+            xAxis: {type:'category',data:days,axisLine:{show:false},axisTick:{show:false},axisLabel:{color:'#94a3b8',fontSize:11}},
+            yAxis: {type:'value',splitLine:{lineStyle:{color:'#f1f5f9'}},axisLabel:{color:'#94a3b8',fontSize:11}},
+            series: [{data:vals,type:'line',smooth:true,symbol:'circle',symbolSize:6,
+              lineStyle:{color:'#3b82f6',width:2.5},
+              itemStyle:{color:'#3b82f6'},
+              areaStyle:{color:{type:'linear',x:0,y:0,x2:0,y2:1,colorStops:[{offset:0,color:'rgba(59,130,246,.15)'},{offset:1,color:'rgba(59,130,246,0)'}]}}
+            }]
+          });
+          this.consTrend = vals.map(function(v,i){ return {day:days[i],value:v}; });
+        }
+      },
+      watch: {
+        tab: function(v){
+          var self = this;
+          if(v === 'consumption') self.$nextTick(function(){ self.renderConsChart(); });
+        }
+      },
+      mounted: function(){
+        // Show app, hide loading
+        if(loadingEl) loadingEl.style.opacity = '0';
+        appEl.style.display = '';
+        var self = this;
+        setTimeout(function(){
+          if(loadingEl) loadingEl.style.display = 'none';
+        }, 400);
+      }
+    });
+
+    app.mount('#app');
+  } catch(e){
+    console.error('App init error:', e);
+    var ls = document.getElementById('loading-screen');
+    if(ls) ls.innerHTML = '<div class="ls-inner"><p style="color:#991b1b;font-size:.9rem">初始化失败: ' + e.message + '<br><small>请刷新页面重试</small></p></div>';
+  }
+}
+
+// Start the app
+initApp();
+</script>
+</body>
+</html>

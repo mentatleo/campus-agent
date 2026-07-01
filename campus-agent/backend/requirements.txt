@@ -1,0 +1,12 @@
+fastapi==0.115.6
+uvicorn==0.34.0
+pydantic==2.10.3
+chromadb==0.5.23
+sentence-transformers==3.3.1
+openai==1.58.1
+httpx==0.28.1
+pandas==2.2.3
+numpy==2.2.1
+python-multipart==0.0.19
+sse-starlette==2.2.1
+jinja2==3.1.4
